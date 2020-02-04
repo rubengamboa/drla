@@ -166,19 +166,19 @@ class PredicateExpression:
 
     def collect_vars(self):
         known_vars = set()
-        self._collect_vars(known_vars)
+        self.collect_vars_helper(known_vars)
 
-    def _collect_vars(self, known_vars):
+    def collect_vars_helper(self, known_vars):
         for child in self.children():
-            child._collect_vars(known_vars)
+            child.collect_vars_helper(known_vars)
 
     def has_unique_vars(self):
         known_vars = set()
-        return self._has_unique_vars(known_vars)
+        return self.has_unique_vars_helper(known_vars)
 
-    def _has_unique_vars(self, known_vars):
+    def has_unique_vars_helper(self, known_vars):
         for child in self.children():
-            if not child._has_unique_vars(known_vars):
+            if not child.has_unique_vars_helper(known_vars):
                 return False
         return True
 
@@ -187,6 +187,10 @@ class PredicateExpression:
             if child.contains(var):
                 return True
         return False
+
+    # noinspection PyMethodMayBeStatic
+    def children(self):
+        return []
 
 
 class ObjectExpression:
@@ -202,15 +206,17 @@ class ObjectExpression:
     def equal(self, other):
         return isinstance(other, type(self)) and self.value == other.value
 
-    def _collect_vars(self, known_vars):
+    def collect_vars_helper(self, known_vars):
         return
 
-    def _has_unique_vars(self, known_vars):
+    # noinspection PyMethodMayBeStatic
+    def has_unique_vars_helper(self, _known_vars):
         return True
 
     def contains(self, var):
         return False
 
+    # noinspection PyMethodMayBeStatic
     def children(self):
         return []
 
@@ -224,12 +230,12 @@ class ObjectExpression:
         return str(self.value)
 
 
-class NumericConstantExpression (ObjectExpression):
+class NumericConstantExpression(ObjectExpression):
     def __init__(self, value):
         super().__init__(value)
 
 
-class VariableExpression (ObjectExpression):
+class VariableExpression(ObjectExpression):
     def __init__(self, symbol):
         super().__init__(symbol)
 
@@ -244,7 +250,7 @@ class VariableExpression (ObjectExpression):
             return bindings[self.value]
         return self
 
-    def _collect_vars(self, known_vars):
+    def collect_vars_helper(self, known_vars):
         for var in known_vars:
             if self.equal(var):
                 return
@@ -254,8 +260,7 @@ class VariableExpression (ObjectExpression):
         return self.equal(var)
 
 
-
-class LogicalConstantExpression (PredicateExpression):
+class LogicalConstantExpression(PredicateExpression):
     def __init__(self, value):
         self.value = value
 
@@ -279,7 +284,7 @@ class LogicalConstantExpression (PredicateExpression):
         return str(self.value)
 
 
-class PredicateInstanceExpression (PredicateExpression):
+class PredicateInstanceExpression(PredicateExpression):
     def __init__(self, predicate, args):
         self.predicate = predicate
         self.args = args
@@ -321,7 +326,7 @@ class PredicateInstanceExpression (PredicateExpression):
         return str(self)
 
 
-class QuantifierExpression (PredicateExpression):
+class QuantifierExpression(PredicateExpression):
     def __init__(self, quantifier, var, expr):
         self.quantifier = quantifier
         self.var = var
@@ -347,7 +352,7 @@ class QuantifierExpression (PredicateExpression):
                self.var.equal(other.var) and \
                self.expr.equal(other.expr)
 
-    def _has_unique_vars(self, known_vars):
+    def has_unique_vars_helper(self, known_vars):
         if self.var.value in known_vars:
             return False
         known_vars.add(self.var.value)
@@ -375,17 +380,17 @@ class QuantifierExpression (PredicateExpression):
             return prefix + left
 
 
-class ForallExpression (QuantifierExpression):
+class ForallExpression(QuantifierExpression):
     def __init__(self, var, expr):
         super().__init__("all", var, expr)
 
 
-class ExistsExpression (QuantifierExpression):
+class ExistsExpression(QuantifierExpression):
     def __init__(self, var, expr):
         super().__init__("some", var, expr)
 
 
-class NotExpression (PredicateExpression):
+class NotExpression(PredicateExpression):
     def __init__(self, expr):
         self.expr = expr
 
@@ -412,7 +417,7 @@ class NotExpression (PredicateExpression):
             return "~" + left
 
 
-class BinaryExpression (PredicateExpression):
+class BinaryExpression(PredicateExpression):
     def __init__(self, opstr, op, level, lhs, rhs):
         self.opstr = opstr
         self.op = op
@@ -448,25 +453,24 @@ class BinaryExpression (PredicateExpression):
             return left + " " + self.op + " " + right
 
 
-class AndExpression (BinaryExpression):
+class AndExpression(BinaryExpression):
     def __init__(self, lhs, rhs):
         super().__init__("And", "/\\", 8, lhs, rhs)
 
 
-class OrExpression (BinaryExpression):
+class OrExpression(BinaryExpression):
     def __init__(self, lhs, rhs):
         super().__init__("Or", "\\/", 6, lhs, rhs)
 
 
-class ImpliesExpression (BinaryExpression):
+class ImpliesExpression(BinaryExpression):
     def __init__(self, lhs, rhs):
         super().__init__("Implies", "==>", 4, lhs, rhs)
 
 
-class IffExpression (BinaryExpression):
+class IffExpression(BinaryExpression):
     def __init__(self, lhs, rhs):
         super().__init__("Iff", "<=>", 2, lhs, rhs)
-
 
 # expr1 = PredicateExpression.parse("(forall x) (forall y) (exists z) P(x, y, z) ==> (exists w) Q(x, w, z)")
 # print(expr1)

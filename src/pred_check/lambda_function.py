@@ -2,7 +2,8 @@ import json
 from urllib.parse import parse_qs
 import base64
 import traceback
-import pred_check.PredicateProofChecker as ppc
+import pred_check.PredicateProofChecker as PredChecker
+
 
 def get_arg(event, args, name):
     arg = ""
@@ -12,10 +13,11 @@ def get_arg(event, args, name):
         arg = " ".join(args[name])
     return arg
 
-def lambda_handler(event, context):
+
+def lambda_handler(event, _context):
+    # noinspection PyBroadException,PyBroadException
     try:
         args = {}
-        body = ""
         if "body" in event:
             body = event["body"]
             if "isBase64Encoded" in event and event["isBase64Encoded"]:
@@ -24,16 +26,16 @@ def lambda_handler(event, context):
         proof_script = get_arg(event, args, "proof")
         goal = get_arg(event, args, "goal")
 
-        proof = ppc.PredicateProof(goal)
+        proof = PredChecker.PredicateProof(goal)
         errors = proof.check_proof(proof_script)
-    
+
         return {
             'statusCode': 200,
-            'body': json.dumps({"goal":goal,
-                                "proof":proof_script,
-                                "errors":errors})
+            'body': json.dumps({"goal": goal,
+                                "proof": proof_script,
+                                "errors": errors})
         }
-    except Exception as e:
+    except Exception:
         return {
             'statusCode': 500,
             'body': json.dumps({"exception": traceback.format_exc()})

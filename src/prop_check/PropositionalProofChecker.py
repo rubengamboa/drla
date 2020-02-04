@@ -82,7 +82,6 @@ class PropositionalProof:
                 self.steps = PropositionalProof.parse_proof_script(script)
             else:
                 self.steps = script
-        print(self.steps)
         errors = []
         if len(self.steps) == 0:
             errors.append("Proof is empty")
@@ -191,7 +190,17 @@ class PropositionalProof:
 # errors0 = proof.check_proof(proof_script)
 # print(errors0)
 
-# response = {"lhs": "(x \\\\/ y) /\\\\ y", "rhs": "y", "extra_axioms": "", "proof": "                (x \\\\/ y) /\\\\ y \r\n              = (x \\\\/ y) /\\\\ (y \\\\/ False)     { \\\\/ identity } \r\n              = (y \\\\/ x) /\\\\ (y \\\\/ False)     { \\\\/ commutative } \r\n              = y \\\\/ (x /\\\\ False)             { \\\\/ distributive } \r\n              = y \\\\/ False                     { /\\\\ null } \r\n              = y                               { \\\\/ identity }\r\n            ", "errors": []}
+# response = {"lhs": "(x \\\\/ y) /\\\\ y",
+#             "rhs": "y",
+#             "extra_axioms": "",
+#             "proof": """
+#             (x \\\\/ y) /\\\\ y
+#             = (x \\\\/ y) /\\\\ (y \\\\/ False)     { \\\\/ identity }
+#             = (y \\\\/ x) /\\\\ (y \\\\/ False)     { \\\\/ commutative }
+#             = y \\\\/ (x /\\\\ False)             { \\\\/ distributive }
+#             = y \\\\/ False                     { /\\\\ null }
+#             = y                               { \\\\/ identity }
+#             """}
 #
 # proof = PropositionalProof(response["lhs"],
 #                            response["rhs"],

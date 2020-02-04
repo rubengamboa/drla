@@ -15,6 +15,7 @@ class Token:
     def to_string(self):
         return str(self.value)
 
+
 _BASE_TOKENS = [Token('OR', '\\/'),
                 Token('AND', '/\\'),
                 Token('NOT', '~'),
@@ -34,6 +35,7 @@ _EXTRA_TOKENS = [Token('LBRACE', '{'),
                  Token('IMPLIEDBY', '-|')
                  ]
 
+
 class PredicateTokenizer:
     def __init__(self, tokens=None):
         if tokens is None:
@@ -44,7 +46,7 @@ class PredicateTokenizer:
         var_re = re.compile("[a-zA-Z_][a-zA-Z0-9_]*")
         const_re = re.compile("[0-9]+")
         tokens = []
-        s = expr.replace("\\\\","\\").lower()
+        s = expr.replace("\\\\", "\\").lower()
         while True:
             s = s.lstrip()
             if s == "":

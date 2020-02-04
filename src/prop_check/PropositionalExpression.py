@@ -110,6 +110,9 @@ class ConstantExpression (PropositionalExpression):
     def equal(self, other):
         return isinstance(other, ConstantExpression) and self.value == other.value
 
+    def simplify(self):
+        return self
+
     # noinspection PyMethodMayBeStatic
     def children(self):
         return []
@@ -142,6 +145,9 @@ class VariableExpression (PropositionalExpression):
     def equal(self, other):
         return isinstance(other, VariableExpression) and self.symbol == other.symbol
 
+    def simplify(self):
+        return self
+
     # noinspection PyMethodMayBeStatic
     def children(self):
         return []
@@ -168,6 +174,15 @@ class NotExpression (PropositionalExpression):
 
     def equal(self, other):
         return isinstance(other, NotExpression) and self.expr.equal(other.expr)
+
+    def simplify(self):
+        expr1 = self.expr.simplify()
+        if isinstance(expr1, NotExpression):
+            return expr1.expr
+        elif isinstance(expr1, ConstantExpression):
+            return ConstantExpression(not expr1.value)
+        else:
+            return NotExpression(expr1)
 
     def children(self):
         return [self.expr]
@@ -204,6 +219,22 @@ class BinaryExpression (PropositionalExpression):
                and self.lhs.equal(other.lhs) \
                and self.rhs.equal(other.rhs)
 
+    def simplify(self):
+        expr1 = self.lhs.simplify()
+        expr2 = self.rhs.simplify()
+        if isinstance(expr1, ConstantExpression):
+            if isinstance(expr2, ConstantExpression):
+                return type(self).create_const_lhs_rhs(expr1, expr2)
+            else:
+                return type(self).create_const_lhs(expr1, expr2)
+        elif isinstance(expr2, ConstantExpression):
+            return type(self).create_const_rhs(expr1, expr2)
+        else:
+            return (type(self))(expr1, expr2)
+
+    def create_partial_eval(self, expr1, expr2):
+        return (type(self))(expr1, expr2)
+
     def children(self):
         return [self.lhs, self.rhs]
 
@@ -223,6 +254,21 @@ class AndExpression (BinaryExpression):
     def __init__(self, lhs, rhs):
         super().__init__("And", "/\\", 8, lhs, rhs)
 
+    @staticmethod
+    def create_const_lhs_rhs(expr1, expr2):
+        return ConstantExpression(expr1.value and expr2.value1)
+
+    @staticmethod
+    def create_const_lhs(expr1, expr2):
+        if expr1.value:
+            return expr2
+        else:
+            return ConstantExpression(False)
+
+    @staticmethod
+    def create_const_rhs(expr1, expr2):
+        return AndExpression.create_const_lhs(expr2, expr1)
+
     def eval(self, bindings):
         return self.lhs.eval(bindings) and self.rhs.eval(bindings)
 
@@ -230,6 +276,21 @@ class AndExpression (BinaryExpression):
 class OrExpression (BinaryExpression):
     def __init__(self, lhs, rhs):
         super().__init__("Or", "\\/", 6, lhs, rhs)
+
+    @staticmethod
+    def create_const_lhs_rhs(expr1, expr2):
+        return ConstantExpression(expr1.value or expr2.value1)
+
+    @staticmethod
+    def create_const_lhs(expr1, expr2):
+        if expr1.value:
+            return ConstantExpression(True)
+        else:
+            return expr2
+
+    @staticmethod
+    def create_const_rhs(expr1, expr2):
+        return OrExpression.create_const_lhs(expr2, expr1)
 
     def eval(self, bindings):
         return self.lhs.eval(bindings) or self.rhs.eval(bindings)
@@ -239,6 +300,24 @@ class ImpliesExpression (BinaryExpression):
     def __init__(self, lhs, rhs):
         super().__init__("Implies", "==>", 4, lhs, rhs)
 
+    @staticmethod
+    def create_const_lhs_rhs(expr1, expr2):
+        return ConstantExpression((not expr1.value) or expr2.value1)
+
+    @staticmethod
+    def create_const_lhs(expr1, expr2):
+        if expr1.value:
+            return expr2
+        else:
+            return ConstantExpression(True)
+
+    @staticmethod
+    def create_const_rhs(expr1, expr2):
+        if expr2.value:
+            return ConstantExpression(True)
+        else:
+            return NotExpression(expr1)
+
     def eval(self, bindings):
         return (not self.lhs.eval(bindings)) or self.rhs.eval(bindings)
 
@@ -246,6 +325,21 @@ class ImpliesExpression (BinaryExpression):
 class IffExpression (BinaryExpression):
     def __init__(self, lhs, rhs):
         super().__init__("Iff", "<=>", 2, lhs, rhs)
+
+    @staticmethod
+    def create_const_lhs_rhs(expr1, expr2):
+        return ConstantExpression((not expr1.value) or expr2.value1)
+
+    @staticmethod
+    def create_const_lhs(expr1, expr2):
+        if expr1.value:
+            return expr2
+        else:
+            return NotExpression(expr2)
+
+    @staticmethod
+    def create_const_rhs(expr1, expr2):
+        return IffExpression.create_const_lhs(expr2, expr1)
 
     def eval(self, bindings):
         if self.lhs.eval(bindings):

@@ -1,12 +1,10 @@
 import pred_check.PredicateExpression as PExp
-import pred_check.PredicateTokenizer as PTk
 import pred_check.PredicateMatcher as PMatch
-
+import pred_check.PredicateTokenizer as PTk
 import prop_check.PropositionalExpression as PropExp
 
-import copy
-
 _parse = PExp.PredicateExpression.parse
+
 
 class PredicateProof:
     def __init__(self, goal):
@@ -26,7 +24,6 @@ class PredicateProof:
         if tokens[0].type != 'LBRACE':
             raise ValueError("Expected a '{', but found : " + PTk.PredicateTokenizer.stringify_tokens(tokens))
         tokens = tokens[1:]
-        reason = None
         if tokens[0].type == 'VAR' and tokens[0].value in ["rename", "migrate", "remove", "propositional"]:
             if tokens[0].value == 'rename':
                 tokens = tokens[1:]
@@ -60,9 +57,9 @@ class PredicateProof:
     @staticmethod
     def expect_keyword(tokens, keyword):
         if len(tokens) == 0:
-            raise ValueError("Expected '"  + keyword + "', but found EOF")
+            raise ValueError("Expected '" + keyword + "', but found EOF")
         if not (tokens[0].type == 'VAR' and tokens[0].value == keyword):
-            raise ValueError("Expected '"  + keyword + "', but found : " +
+            raise ValueError("Expected '" + keyword + "', but found : " +
                              PTk.PredicateTokenizer.stringify_tokens(tokens))
 
     @staticmethod
@@ -98,18 +95,19 @@ class PredicateProof:
         if not self.steps[0][0].equal(self.goal):
             errors.append("Step 1: First step does not match the theorem you want to prove")
         for i in range(1, len(self.steps)):
-            if self.steps[i-1][0].equal(self.steps[i][0]):
+            error_msg = None
+            if self.steps[i - 1][0].equal(self.steps[i][0]):
                 errors.append("Step {} does nothing".format(i + 1))
             elif self.steps[i][1][0] == 'rename':
                 old_var = self.steps[i][1][1]
                 new_var = self.steps[i][1][2]
-                error_msg = PredicateProof.check_rename(old_var, new_var, self.steps[i-1][0], self.steps[i][0])
+                error_msg = PredicateProof.check_rename(old_var, new_var, self.steps[i - 1][0], self.steps[i][0])
             elif self.steps[i][1][0] == 'migrate':
-                error_msg, _ = PredicateProof.check_migrate(self.steps[i][1][1], self.steps[i-1][0], self.steps[i][0])
+                error_msg, _ = PredicateProof.check_migrate(self.steps[i][1][1], self.steps[i - 1][0], self.steps[i][0])
             elif self.steps[i][1][0] == 'remove':
-                error_msg = PredicateProof.check_remove(self.steps[i][1][1], self.steps[i-1][0], self.steps[i][0])
+                error_msg = PredicateProof.check_remove(self.steps[i][1][1], self.steps[i - 1][0], self.steps[i][0])
             else:
-                error_msg, _ = PredicateProof.check_propositional(self.steps[i-1][0], self.steps[i][0])
+                error_msg, _ = PredicateProof.check_propositional(self.steps[i - 1][0], self.steps[i][0])
             if error_msg and error_msg is not True:
                 errors.append("Step {}: {}".format(i + 1, error_msg))
         if not self.steps[-1][0].equal(PExp.LogicalConstantExpression(True)):
@@ -162,7 +160,7 @@ class PredicateProof:
                     return "Cannot migrate a quantifier past a different quantifier", True
                 lhs1 = lhs.expr
                 rhs1 = rhs.expr
-                if not (isinstance(lhs1, type(lhs)) and isinstance(rhs1, type(lhs)) and \
+                if not (isinstance(lhs1, type(lhs)) and isinstance(rhs1, type(lhs)) and
                         lhs1.var.equal(rhs.var) and rhs1.var.equal(lhs.var)):
                     return "Result does not match prior step by migrating quantifier", True
                 return PredicateProof.check_migrate(old_var, lhs1.expr, rhs1.expr, True)
@@ -212,7 +210,7 @@ class PredicateProof:
     def check_remove(old_var, lhs, rhs):
         if not (isinstance(lhs, PExp.QuantifierExpression) and lhs.var.equal(old_var)):
             return "Only the quantifier at the very front can be removed"
-        matcher = PMatch.PredicateMatcher() #{lhs.var.value: lhs.var})
+        matcher = PMatch.PredicateMatcher()  # {lhs.var.value: lhs.var})
         if not matcher.match(lhs.expr, rhs):
             return "Resulting expression does not match prior expression after removing quantifier"
         for var_name, value in matcher.bindings.items():
@@ -230,14 +228,14 @@ class PredicateProof:
 
     @staticmethod
     def check_propositional(lhs, rhs, diff=False):
-        if not isinstance(rhs,type(lhs)):
+        if not isinstance(rhs, type(lhs)):
             return PredicateProof.is_tautology(lhs, rhs), True
-        if isinstance(lhs,PExp.PredicateInstanceExpression):
+        if isinstance(lhs, PExp.PredicateInstanceExpression):
             if lhs.equal(rhs):
                 return None, diff
             return "Resulting expression is not propositionally equivalent to prior step, e.g. when\n" + \
-                lhs.to_string() + " is True and " + rhs.to_string() + " is False", \
-                diff
+                   lhs.to_string() + " is True and " + rhs.to_string() + " is False", \
+                   diff
         if isinstance(lhs, PExp.LogicalConstantExpression):
             if lhs.equal(rhs):
                 return None, diff
@@ -287,23 +285,23 @@ class PredicateProof:
         pred = expr.to_string()
         if pred not in pred_to_prop:
             n = len(prop_to_pred.keys())
-            prop = PropExp.VariableExpression("p"+str(n))
+            prop = PropExp.VariableExpression("p" + str(n))
             pred_to_prop[pred] = prop
-            prop_to_pred["p"+str(n)] = pred
+            prop_to_pred["p" + str(n)] = pred
         return pred_to_prop[pred]
 
     @staticmethod
-    def _is_tautology(prop, prop_to_pred, vars, bindings):
-        if len(vars) == 0:
+    def _is_tautology(prop, prop_to_pred, var_names, bindings):
+        if len(var_names) == 0:
             if prop.eval(bindings):
                 return True
             return PredicateProof.create_error_msg_for_bindings(bindings, prop_to_pred)
-        bindings[vars[0]] = True
-        error_msg = PredicateProof._is_tautology(prop, prop_to_pred, vars[1:], bindings)
+        bindings[var_names[0]] = True
+        error_msg = PredicateProof._is_tautology(prop, prop_to_pred, var_names[1:], bindings)
         if error_msg and error_msg is not True:
             return error_msg
-        bindings[vars[0]] = False
-        return PredicateProof._is_tautology(prop, prop_to_pred, vars[1:], bindings)
+        bindings[var_names[0]] = False
+        return PredicateProof._is_tautology(prop, prop_to_pred, var_names[1:], bindings)
 
     @staticmethod
     def create_error_msg_for_bindings(bindings, prop_to_pred):
@@ -311,7 +309,6 @@ class PredicateProof:
         for var, value in bindings.items():
             error_msg += "\n" + prop_to_pred[var] + " is " + str(bindings[var])
         return error_msg
-
 
 # proof_script = """
 #    ((all x) P(x)) ==> ((exists x) P(x))

@@ -1,14 +1,15 @@
 # import pred_check.PredicateExpression as PExp
 
+
 class PredicateMatcher:
     def __init__(self, bindings=None):
         if bindings is None:
-            bindings ={}
+            bindings = {}
         self.bindings = bindings
 
     def reset(self, bindings=None):
         if bindings is None:
-            bindings ={}
+            bindings = {}
         self.bindings = bindings
 
     def match(self, pattern, expr):

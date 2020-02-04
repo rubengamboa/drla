@@ -15,6 +15,7 @@ class Token:
     def to_string(self):
         return str(self.value)
 
+
 _BASE_TOKENS = [Token('OR', '\\/'),
                 Token('AND', '/\\'),
                 Token('NOT', '~'),
@@ -39,7 +40,7 @@ class PropositionalTokenizer:
     def tokenize(self, expr):
         var_re = re.compile("[a-zA-Z_][a-zA-Z0-9_]*")
         tokens = []
-        s = expr.replace("\\\\","\\").lower()
+        s = expr.replace("\\\\", "\\").lower()
         while True:
             s = s.lstrip()
             if s == "":
