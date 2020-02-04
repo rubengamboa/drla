@@ -13,6 +13,8 @@ class PredicateExpression:
         expr, rest = PredicateExpression.parse_expression(tokenizer.tokenize(s))
         if len(rest) != 0:
             raise ValueError("Expected END but found tokens: " + PTk.PredicateTokenizer.stringify_tokens(rest))
+        arities = {}
+        expr.check_predicate_arities(arities)
         return expr
 
     @staticmethod
@@ -188,6 +190,10 @@ class PredicateExpression:
                 return True
         return False
 
+    def check_predicate_arities(self, arities):
+        for child in self.children():
+            child.check_predicate_arities(arities)
+
     # noinspection PyMethodMayBeStatic
     def children(self):
         return []
@@ -316,6 +322,14 @@ class PredicateInstanceExpression(PredicateExpression):
     def children(self):
         return self.args
 
+    def check_predicate_arities(self, arities):
+        if self.predicate in arities:
+            if len(self.args) != arities[self.predicate]:
+                raise ValueError(f"Predicate {self.predicate} is used with different number of arguments " +
+                                 f"({len(self.args)} vs {arities[self.predicate]})")
+        else:
+            arities[self.predicate] = len(self.args)
+
     def __str__(self):
         args = []
         for arg in self.args:
@@ -357,6 +371,9 @@ class QuantifierExpression(PredicateExpression):
             return False
         known_vars.add(self.var.value)
         return True
+
+    def check_predicate_arities(self, arities):
+        self.expr.check_predicate_arities(arities)
 
     def children(self):
         return [self.var, self.expr]
@@ -480,9 +497,9 @@ class IffExpression(BinaryExpression):
 # print(expr1.to_string())
 #
 #
-# expr1 = PredicateExpression.parse("(all x) (forall y) (some z) [P(x, y, z) ==> (exists w) ~Q(x, w, z) /\\ R(y)]")
-# print(expr1)
-# s1 = expr1.to_string()
-# print(s1)
-# expr1 = PredicateExpression.parse(s1)
-# print(expr1.to_string())
+expr1 = PredicateExpression.parse("(all x) (forall y) (some z) [P(x, y, z) ==> (exists w) ~Q(x, w, z) /\\ P(y)]")
+print(expr1)
+s1 = expr1.to_string()
+print(s1)
+expr1 = PredicateExpression.parse(s1)
+print(expr1.to_string())
