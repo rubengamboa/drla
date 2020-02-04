@@ -497,9 +497,9 @@ class IffExpression(BinaryExpression):
 # print(expr1.to_string())
 #
 #
-expr1 = PredicateExpression.parse("(all x) (forall y) (some z) [P(x, y, z) ==> (exists w) ~Q(x, w, z) /\\ P(y)]")
-print(expr1)
-s1 = expr1.to_string()
-print(s1)
-expr1 = PredicateExpression.parse(s1)
-print(expr1.to_string())
+# expr1 = PredicateExpression.parse("(all x) (forall y) (some z) [P(x, y, z) ==> (exists w) ~Q(x, w, z) /\\ P(y)]")
+# print(expr1)
+# s1 = expr1.to_string()
+# print(s1)
+# expr1 = PredicateExpression.parse(s1)
+# print(expr1.to_string())
